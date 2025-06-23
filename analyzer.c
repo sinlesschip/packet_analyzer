@@ -28,7 +28,7 @@ void packet_handler(u_char *args,
         strncpy(src_ip, inet_ntoa(ip_header->ip_src), INET_ADDRSTRLEN);
         strncpy(dst_ip, inet_ntoa(ip_header->ip_dst), INET_ADDRSTRLEN);
 
-        printf("Source IP: %15s ---> Destination IP: %s\t Protocol: %s\n",
+        printf("Source IP: %15s\t--->\tDestination IP: %15s\t(%s)\n",
                src_ip, dst_ip, get_protocol_name(ip_header->ip_p));
     }
 
