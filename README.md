@@ -11,4 +11,4 @@ compile with `gcc analyzer.c -o analyzer -lpcap`
 
 #### Example uses
 `sudo analyzer` - default infinite capture and print to stdout, no file to save  
-`sudo analyzer -f capture.pcap -p 100` - all arguments specified
+`sudo analyzer -f capture.pcap -i 100` - all arguments specified
