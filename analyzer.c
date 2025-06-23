@@ -1,12 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <pcap/pcap.h>
-#include <net/ethernet.h>
+#include <pcap.h>
+#include <netinet/if_ether.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netinet/ip.h>
+#include <sys/types.h>
 #include <string.h>
+#include <signal.h>
 
+pcap_dumper_t *dumper = NULL;
+pcap_t *handle = NULL;
 const char* get_protocol_name(uint8_t proto);
+
+
+void handle_sigint(int sig) {
+    printf("\nCtrl+C detected, stopping capture...\n");
+    if (handle) {
+        pcap_breakloop(handle);
+    }
+}
 
 // callback function called by the pcap_loop for every packet
 void packet_handler(u_char *args, 
@@ -44,10 +57,33 @@ const char* get_protocol_name(uint8_t proto) {
     }
 }
 
-int main() {
+int main(int argc, char *argv[]) {
+
+    char *end;
+    long iterations = -1;
+    char *filename = NULL;
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-i") == 0 && i + 1 < argc) {
+            iterations = strtol(argv[i+1], &end, 10);
+        } else if (strcmp(argv[i], "-f") == 0 && i + 1 < argc) {
+            filename = argv[i+1];
+        }
+    }
+
+
+    if (iterations > 0) {   
+        printf("Packet count: %d\n", iterations);
+    }
+
+    if (filename) {
+        printf("filename: %s\n", filename);
+    }
+    
     pcap_if_t *alldevs;
-    pcap_t *handle;
     char errbuf[PCAP_ERRBUF_SIZE];
+
+    signal(SIGINT, handle_sigint);
 
     // try to get network devices
     if (pcap_findalldevs(&alldevs, errbuf) == -1) {
@@ -64,9 +100,21 @@ int main() {
 
     printf("Using device: %s\n", alldevs->name);
 
+    if (filename) {
+        dumper = pcap_dump_open(handle, filename);
+        if (!dumper) {
+            // something wrong, exit
+            fprintf(stderr, "Couldn't open dump file: %s\n", pcap_geterr(handle));
+            pcap_close(handle);
+            pcap_freealldevs(alldevs);
+            return 3;
+        }
+    }
 
-    pcap_loop(handle, -1, packet_handler, NULL);
+
+    pcap_loop(handle, iterations, packet_handler, NULL);
     
+    if (dumper) pcap_dump_close(dumper);
     pcap_close(handle);
     pcap_freealldevs(alldevs);
     return 0;
