@@ -4,6 +4,7 @@
 #include <net/ethernet.h>
 #include <arpa/inet.h>
 #include <netinet/ip.h>
+#include <string.h>
 
 // callback function called by the pcap_loop for every packet
 void packet_handler(u_char *args, 
@@ -16,10 +17,14 @@ void packet_handler(u_char *args,
     if (ntohs(eth_header->ether_type) == ETHERTYPE_IP) {
         // ipv4 header starts after Ethernet header
         struct ip *ip_header = (struct ip *)(packet + sizeof(struct ether_header));
+        char src_ip[INET_ADDRSTRLEN];
+        char dst_ip[INET_ADDRSTRLEN];
 
-        // convert source and dest IP addresses to strings
-        char *src_ip = inet_ntoa(ip_header->ip_src);
-        char *dst_ip = inet_ntoa(ip_header->ip_dst);
+        // convert source and dest IP addresses to strings 
+        // inet_ntoa returns a pointer to a buffer, and rewrites buffer each call,
+        // so we must copy
+        strncpy(src_ip, inet_ntoa(ip_header->ip_src), INET_ADDRSTRLEN);
+        strncpy(dst_ip, inet_ntoa(ip_header->ip_dst), INET_ADDRSTRLEN);
 
         printf("Source IP: %s\n", src_ip);
         printf("Destination IP: %s\n", dst_ip);
